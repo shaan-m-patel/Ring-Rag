@@ -1,7 +1,7 @@
 # RING RAG Application (Prototype 3.0)
 
 ## Demo
-https://youtu.be/-_mzu2c2y6w
+[https://youtu.be/-_mzu2c2y6w](https://youtu.be/-_mzu2c2y6w?t=270)
 
 ## Overview
 
