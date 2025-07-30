@@ -1,5 +1,7 @@
 # RING RAG Application (Prototype 3.0)
 
+## Disclaimer: This was a proof of concept / prototype and is not representative of the current MVP
+
 ## Demo
 [https://youtu.be/-_mzu2c2y6w](https://youtu.be/-_mzu2c2y6w?t=270)
 
