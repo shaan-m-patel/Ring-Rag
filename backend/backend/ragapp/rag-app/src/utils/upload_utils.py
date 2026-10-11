@@ -114,43 +114,53 @@ def chunk_text(text, chunk_size):
     return chunks
 
 # * 
-def restructure_files(file_paths, uploaded_hashes):
+def restructure_files(file_paths, uploaded_hashes, max_document_chars=50000, max_chunks_per_file=40):
     """
     Upload multiple files. Concatenate all text from a file, then chunk it, then
     name each chunk using the filename and the chunk number (e.g., "file.pdf - 1").
     Returns titles & descriptions in a 2D list.
+
+    Text sent to the shared OpenAI key is capped so one file cannot unbounded
+    the summarization and embedding calls.
     """
+    if max_document_chars < 1:
+        max_document_chars = 1
+    if max_chunks_per_file < 1:
+        max_chunks_per_file = 1
+
     data = [[], []]  # [titles, descriptions]
     for file_path in file_paths:
         file_hash = hash_file(file_path)
         if file_hash in uploaded_hashes:
-            print(f"File already processed: {file_path}")
+            print(f"File already processed: {os.path.basename(file_path)}")
             continue
 
         filename = os.path.basename(file_path)
+        lowered = file_path.lower()
 
         # PDF handling
-        if file_path.endswith(".pdf"):
+        if lowered.endswith(".pdf"):
             docs = load_pdf(file_path)
             full_text = " ".join(doc["page_content"] for doc in docs)
-            chunks = chunk_text(full_text, chunk_size=1200)
+            full_text = full_text[:max_document_chars]
+            chunks = chunk_text(full_text, chunk_size=1200)[:max_chunks_per_file]
             for idx, chunk in enumerate(chunks, start=1):
                 data[0].append(f"{filename} - {idx}")
                 data[1].append(chunk)
             print(f"Uploaded {filename} in {len(chunks)} chunks.")
 
         # TXT handling
-        elif file_path.endswith(".txt"):
+        elif lowered.endswith(".txt"):
             with open(file_path, "r") as f:
-                full_text = f.read()
-            chunks = chunk_text(full_text, chunk_size=1200)
+                full_text = f.read(max_document_chars)
+            chunks = chunk_text(full_text, chunk_size=1200)[:max_chunks_per_file]
             for idx, chunk in enumerate(chunks, start=1):
                 data[0].append(f"{filename} - {idx}")
                 data[1].append(chunk)
             print(f"Uploaded {filename} in {len(chunks)} chunks.")
 
         else:
-            print(f"Unsupported file type: {file_path}")
+            print(f"Unsupported file type: {filename}")
             continue
 
         uploaded_hashes.add(file_hash)
@@ -200,10 +210,10 @@ def batch_insert(collection, dataset, embedding_model, BATCH_SIZE=100):
         # Insert into Milvus/Zilliz
         collection.insert(insert_data)
 
-    # 1. Loop through each chunk
+    # 1. Loop through each chunk. Lengths match the tenant collection schema.
     for i in tqdm(range(total_chunks)):
-        buffer_titles.append(dataset[0][i])
-        buffer_texts.append(dataset[1][i])
+        buffer_titles.append(dataset[0][i][:500])
+        buffer_texts.append(dataset[1][i][:8000])
 
         # 2. If we reached the BATCH_SIZE, insert
         if len(buffer_titles) >= BATCH_SIZE:

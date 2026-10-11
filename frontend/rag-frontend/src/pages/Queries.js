@@ -1,5 +1,6 @@
 // src/pages/Queries.js
 import React, { useState } from 'react';
+import { apiFetch, readApiPayload } from '../api';
 
 function Queries() {
   const [query, setQuery] = useState('');
@@ -16,21 +17,27 @@ function Queries() {
     setResult('');
 
     try {
-      // POST the query text to your Flask endpoint
-      const response = await fetch('http://localhost:5000/query', {
+      const response = await apiFetch('/query', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query_text: query }),
       });
+      const data = await readApiPayload(response);
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        if (response.status === 401) {
+          setCurrentStep('Authentication required');
+        } else if (response.status === 429) {
+          setCurrentStep('Quota exceeded');
+        } else {
+          setCurrentStep('Error');
+        }
+        setResult(data.error || 'Request failed.');
+        return;
       }
 
-      // Backend returns JSON with "answer" field
-      const data = await response.json();
       setResult(data.answer || 'No answer returned.');
       setCurrentStep('Complete');
     } catch (error) {

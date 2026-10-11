@@ -1,7 +1,7 @@
 // src/pages/Home.js
 import React from 'react';
 import { Link } from 'react-router-dom';
-import RRlogo from "C:\\Users\\shaan\\Documents\\.AIS_Startup\\prototypes\\prototype4\\prototype4\\frontend\\rag-frontend\\src\\RRlogo.webp"
+import RRlogo from '../RRlogo.webp';
 
 function Home() {
   return (

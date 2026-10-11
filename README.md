@@ -53,6 +53,32 @@ To set up the RAG application, follow these steps:
    pip install -r requirements.txt
    ```
 
+## API access control
+
+Query and upload routes require a bearer token checked on the server. Cross-origin access is limited to the configured frontend origin. Each user has a quota, and each tenant is stored in its own Zilliz collection (`ring_<tenant>_<hash>`), not the shared `AIS_Information` collection.
+
+Set these environment variables before starting the API:
+
+```sh
+export RING_API_TOKENS='[{"token":"replace-with-a-long-random-token","user_id":"alice","tenant_id":"acme"}]'
+export FRONTEND_ORIGIN="http://localhost:3000"
+export QUERY_QUOTA="30"
+export UPLOAD_QUOTA="10"
+export QUOTA_WINDOW_SECONDS="3600"
+```
+
+Tokens must be at least 16 characters. A comma-separated `token:user_id:tenant_id` list is also accepted. The web app stores the token in the browser and sends `Authorization: Bearer <token>` with every request. Requests without a valid token are rejected.
+
+Quotas are counted per `user_id`. Query and upload limits are separate. The counter is kept in memory for the API process and starts over when that process restarts. Upload size, files per request, and document text sent to OpenAI are capped with `MAX_UPLOAD_BYTES`, `MAX_FILES_PER_REQUEST`, `MAX_DOCUMENT_CHARS`, and `MAX_CHUNKS_PER_FILE`.
+
+Start the API from `backend/backend/ragapp/rag-app/src`:
+
+```sh
+python app.py
+```
+
+The development server binds to `127.0.0.1:5000`. Set `FLASK_HOST`, `FLASK_PORT`, or `FLASK_DEBUG=1` only when you intend to. Documents already stored in `AIS_Information` are not copied into tenant collections; upload them again for the tenant that should own them.
+
 ## How It Works
 
 ### 1. Preprocessing & Chunking

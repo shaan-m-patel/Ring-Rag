@@ -1,10 +1,12 @@
 // src/pages/Upload.js
 import React, { useState } from 'react';
+import { apiFetch, readApiPayload } from '../api';
 
 function Upload() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFolder, setSelectedFolder] = useState([]);
   const [url, setUrl] = useState('');
+  const [status, setStatus] = useState('');
 
   const handleFileSelect = (e) => {
     setSelectedFile(e.target.files[0]);
@@ -28,18 +30,21 @@ function Upload() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch('http://localhost:5000/upload_file', {
+      const response = await apiFetch('/upload_file', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await readApiPayload(response);
       if (!response.ok) {
+        setStatus(data.error || 'File upload failed.');
         console.error('Error uploading file:', data.error || data);
       } else {
+        setStatus(data.message || 'File upload success.');
         console.log('File upload success:', data.message);
       }
     } catch (error) {
+      setStatus('Upload failed.');
       console.error('Upload failed:', error);
     }
   };
@@ -56,19 +61,22 @@ function Upload() {
         formData.append('files', selectedFolder[i]);
       }
 
-      const response = await fetch('http://localhost:5000/upload_folder', {
+      const response = await apiFetch('/upload_folder', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await readApiPayload(response);
       if (!response.ok) {
+        setStatus(data.error || 'Folder upload failed.');
         console.error('Error uploading folder:', data.error || data);
       } else {
+        setStatus(data.message || 'Folder upload success.');
         console.log('Folder upload success:', data.message);
         console.log('Files:', data.files);
       }
     } catch (error) {
+      setStatus('Folder upload failed.');
       console.error('Folder upload failed:', error);
     }
   };
@@ -79,19 +87,22 @@ function Upload() {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/process_url', {
+      const response = await apiFetch('/process_url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
 
-      const data = await response.json();
+      const data = await readApiPayload(response);
       if (!response.ok) {
+        setStatus(data.error || 'URL processing failed.');
         console.error('Error processing URL:', data.error || data);
       } else {
+        setStatus(data.message || 'URL accepted.');
         console.log('URL processed successfully:', data.message);
       }
     } catch (error) {
+      setStatus('URL processing failed.');
       console.error('URL processing failed:', error);
     }
   };
@@ -99,6 +110,7 @@ function Upload() {
   return (
     <div style={styles.container}>
       <h2>Upload Page</h2>
+      {status && <p>{status}</p>}
 
       {/* Document Upload */}
       <div style={styles.section}>
