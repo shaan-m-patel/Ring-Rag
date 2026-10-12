@@ -2,6 +2,7 @@ import openai
 from decouple import config
 import requests
 import json
+import re
 import textwrap
 from pymilvus import connections, utility, FieldSchema, Collection, CollectionSchema, DataType
 from tqdm import tqdm
@@ -37,22 +38,39 @@ def connect_to_zilliz():
     connections.connect(uri=ZILLIZ_URI, token=ZILLIZ_TOKEN)
     print(f"Connected to Zilliz DB at {ZILLIZ_URI}")
 
-# * 
+_COLLECTION_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,254}")
+
+
+# *
 def get_or_create_collection(collection_name, dimension):
-    """Create a collection if it doesn't exist."""
-    field1 = FieldSchema(name="primary_key", dtype=DataType.INT64, is_primary=True, auto_id=True)
-    field2 = FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dimension)
-    schema = CollectionSchema(fields=[field1, field2], description="Other")
+    """Open a tenant collection, creating it when this tenant has none yet.
 
-    collection = Collection(name=collection_name)
-    print(f"Using existing collection '{collection_name}'.")
+    Callers must pass a server-derived collection name. The shared
+    AIS_Information collection is not selected here.
+    """
+    if not isinstance(collection_name, str) or not _COLLECTION_NAME.fullmatch(collection_name):
+        raise ValueError("Invalid collection name")
 
-    # if collection_name not in connections.list_connections():
-    #     collection = Collection(name=collection_name, schema=schema)
-    #     print(f"Collection '{collection_name}' created.")
-    # else:
-    #     collection = Collection(name=collection_name)
-    #     print(f"Using existing collection '{collection_name}'.")
+    if utility.has_collection(collection_name):
+        collection = Collection(name=collection_name)
+        collection.load()
+        print(f"Using existing collection '{collection_name}'.")
+        return collection
+
+    fields = [
+        FieldSchema(name="primary_key", dtype=DataType.INT64, is_primary=True, auto_id=True),
+        FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
+        FieldSchema(name="description", dtype=DataType.VARCHAR, max_length=8192),
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=dimension),
+    ]
+    schema = CollectionSchema(fields=fields, description="Tenant-isolated documents")
+    collection = Collection(name=collection_name, schema=schema)
+    collection.create_index(
+        field_name="vector",
+        index_params={"metric_type": "COSINE", "index_type": "AUTOINDEX", "params": {}},
+    )
+    collection.load()
+    print(f"Collection '{collection_name}' created.")
     return collection
 
 

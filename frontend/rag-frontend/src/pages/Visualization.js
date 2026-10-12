@@ -1,6 +1,6 @@
 // src/pages/Visualization.js
 import React from 'react';
-import EmbeddingsChart from "C:\\Users\\shaan\\Documents\\.AIS_Startup\\prototypes\\prototype4\\prototype4\\frontend\\rag-frontend\\src\\components\\EmbeddingChart.js";
+import EmbeddingsChart from '../components/EmbeddingChart';
 
 function Visualization() {
   // Example ingested files

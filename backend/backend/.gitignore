@@ -126,5 +126,8 @@ cython_debug/
 # dotenv
 .env
 
+# Uploaded documents (tenant-scoped files written by the API)
+ragapp/rag-app/src/uploads/
+
 # VS Code
 .vscode/

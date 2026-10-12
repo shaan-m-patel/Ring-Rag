@@ -6,6 +6,7 @@ import Upload from './pages/Upload';
 import Queries from './pages/Queries';
 import Visualization from './pages/Visualization';
 import Footer from './components/Footer';
+import ApiTokenField from './components/ApiTokenField';
 
 import './index.css'; // or App.css where you put the styles
 
@@ -15,6 +16,7 @@ function App() {
       <div className="App">
         {/* Main content area */}
         <div className="content">
+          <ApiTokenField />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/upload" element={<Upload />} />
